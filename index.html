@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#15171c">
+<title>場勘紀錄</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' rx='40' fill='%2315171c'/%3E%3Cg fill='none' stroke='%23ffcf4d' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='46' y='64' width='88' height='64' rx='10'/%3E%3Ccircle cx='90' cy='96' r='18'/%3E%3Cpath d='M70 64l8-14h24l8 14'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#15171c; --surface:#1e2128; --surface-2:#272b34;
+    --line:#343a45; --line-soft:#2a2f38;
+    --text:#f3f5f8; --text-dim:#9aa3b2; --text-faint:#6b7382;
+    --accent:#ffcf4d; --accent-press:#e6b733;
+    --danger:#ff6b6b; --ok:#4ddb8e;
+    --r:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+    font-size:17px;line-height:1.4;-webkit-font-smoothing:antialiased;}
+  body{padding-bottom:env(safe-area-inset-bottom);}
+  input,textarea,button{font-family:inherit;font-size:inherit;color:inherit;}
+  input,textarea{background:var(--surface-2);border:1px solid var(--line);
+    border-radius:var(--r);padding:14px;width:100%;color:var(--text);
+    outline:none;transition:border-color .15s;}
+  input:focus,textarea:focus{border-color:var(--accent);}
+  textarea{resize:vertical;min-height:64px;}
+  ::placeholder{color:var(--text-faint);}
+
+  /* 頂部 */
+  header{position:sticky;top:0;z-index:20;background:rgba(21,23,28,.92);
+    backdrop-filter:blur(12px);border-bottom:1px solid var(--line-soft);
+    padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;}
+  .h-row{display:flex;align-items:center;gap:10px;}
+  .h-title{font-size:20px;font-weight:700;letter-spacing:.5px;flex:1;}
+  .h-dot{width:9px;height:9px;border-radius:50%;background:var(--ok);
+    box-shadow:0 0 0 4px rgba(77,219,142,.15);}
+
+  main{padding:16px 16px 120px;max-width:680px;margin:0 auto;}
+
+  .field-label{font-size:14px;color:var(--text-dim);font-weight:600;
+    margin:0 0 8px 2px;letter-spacing:.3px;}
+  .vendor-block{margin-bottom:22px;}
+
+  /* 區域卡 */
+  .zone{background:var(--surface);border:1px solid var(--line-soft);
+    border-radius:18px;padding:16px;margin-bottom:16px;}
+  .zone-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .zone-num{flex-shrink:0;width:32px;height:32px;border-radius:9px;
+    background:var(--surface-2);color:var(--accent);font-weight:700;
+    font-size:15px;display:flex;align-items:center;justify-content:center;}
+  .zone-name{flex:1;}
+  .zone-del{flex-shrink:0;width:40px;height:40px;border-radius:10px;
+    background:transparent;border:1px solid var(--line);color:var(--text-faint);
+    font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .zone-del:active{background:var(--surface-2);color:var(--danger);}
+
+  .zone-notes{margin-top:10px;}
+
+  /* 媒體網格 */
+  .media-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
+  .media-cell{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;
+    background:var(--surface-2);border:1px solid var(--line-soft);}
+  .media-cell img,.media-cell video{width:100%;height:100%;object-fit:cover;display:block;}
+  .media-cell .vid-badge{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.65);
+    color:#fff;font-size:11px;padding:2px 6px;border-radius:6px;display:flex;align-items:center;gap:3px;}
+  .media-cell .cell-del{position:absolute;top:5px;right:5px;width:24px;height:24px;
+    border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:none;font-size:14px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;}
+  .add-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:4px;color:var(--text-dim);cursor:pointer;border:1.5px dashed var(--line);
+    background:var(--surface-2);transition:border-color .15s,color .15s;}
+  .add-cell:active{border-color:var(--accent);color:var(--accent);}
+  .add-cell .plus{font-size:26px;font-weight:300;line-height:1;}
+  .add-cell .cnt{font-size:11px;color:var(--text-faint);}
+
+  /* 按鈕 */
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;padding:16px;border-radius:14px;border:none;font-weight:700;
+    font-size:17px;cursor:pointer;letter-spacing:.5px;}
+  .btn-add-zone{background:var(--surface);color:var(--accent);
+    border:1.5px dashed var(--line);margin-top:4px;}
+  .btn-add-zone:active{background:var(--surface-2);}
+
+  /* 底部固定列 */
+  .footbar{position:fixed;left:0;right:0;bottom:0;z-index:30;
+    padding:12px 16px calc(env(safe-area-inset-bottom) + 12px);
+    background:linear-gradient(to top,var(--bg) 60%,transparent);
+    display:flex;gap:10px;}
+  .btn-save{flex:1;background:var(--surface-2);color:var(--text);border:1px solid var(--line);}
+  .btn-upload{flex:1.4;background:var(--accent);color:#1a1305;}
+  .btn-upload:active{background:var(--accent-press);}
+
+  /* 狀態膠囊 */
+  .status-pill{position:fixed;left:50%;transform:translateX(-50%);
+    bottom:calc(env(safe-area-inset-bottom) + 86px);z-index:40;
+    background:var(--surface);border:1px solid var(--line);border-radius:999px;
+    padding:8px 16px;font-size:14px;display:none;align-items:center;gap:8px;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);}
+  .status-pill.show{display:flex;}
+  .spinner{width:14px;height:14px;border:2px solid var(--line);
+    border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* Toast */
+  .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(20px);
+    bottom:calc(env(safe-area-inset-bottom) + 150px);z-index:50;opacity:0;
+    background:#000;color:#fff;padding:12px 18px;border-radius:12px;font-size:15px;
+    transition:opacity .25s,transform .25s;pointer-events:none;max-width:80%;text-align:center;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .empty-hint{text-align:center;color:var(--text-faint);font-size:14px;
+    padding:8px 0 16px;}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+</head>
+<body>
+<header>
+  <div class="h-row">
+    <div class="h-dot" title="本機已儲存"></div>
+    <div class="h-title">場勘紀錄</div>
+  </div>
+</header>
+
+<main>
+  <div class="vendor-block">
+    <div class="field-label">廠商名稱</div>
+    <input id="vendor" type="text" placeholder="例：永基工業" autocomplete="off">
+  </div>
+
+  <div id="zones"></div>
+
+  <button class="btn btn-add-zone" id="addZone">＋ 新增區域</button>
+  <div class="empty-hint" id="emptyHint">每個區域可拍 / 上傳最多 6 個檔案</div>
+</main>
+
+<div class="status-pill" id="statusPill">
+  <span class="spinner"></span><span id="statusText">處理中…</span>
+</div>
+
+<div class="footbar">
+  <button class="btn btn-save" id="saveBtn">儲存草稿</button>
+  <button class="btn btn-upload" id="uploadBtn">上傳 Drive</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ====== 設定 ======
+const MAX_FILES = 6;
+const MAX_DIM = 1600;          // 照片壓縮最長邊
+const JPG_QUALITY = 0.8;       // 壓縮品質
+const DB_NAME = 'siteSurvey';
+const STORE = 'session';
+// Drive 上傳接點：下一段接 Apps Script 後填入 webhook 網址
+let DRIVE_WEBHOOK = '';        // 例：'https://script.google.com/macros/s/XXXX/exec'
+
+// ====== IndexedDB ======
+let db;
+function openDB(){
+  return new Promise((res,rej)=>{
+    const r = indexedDB.open(DB_NAME,1);
+    r.onupgradeneeded = e=>{ e.target.result.createObjectStore(STORE); };
+    r.onsuccess = e=>{ db=e.target.result; res(); };
+    r.onerror = e=>rej(e);
+  });
+}
+function dbSet(key,val){return new Promise((res,rej)=>{
+  const tx=db.transaction(STORE,'readwrite');
+  tx.objectStore(STORE).put(val,key);
+  tx.oncomplete=res; tx.onerror=rej;
+});}
+function dbGet(key){return new Promise((res,rej)=>{
+  const tx=db.transaction(STORE,'readonly');
+  const rq=tx.objectStore(STORE).get(key);
+  rq.onsuccess=()=>res(rq.result); rq.onerror=rej;
+});}
+
+// ====== 狀態 ======
+let state = { vendor:'', zones:[] };  // zones: [{id,name,notes,files:[{id,kind,blob,name,thumb}]}]
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+// ====== 照片壓縮 / HEIC 轉檔 ======
+async function processImage(file){
+  // 用 createImageBitmap 解碼（含 iOS HEIC），再用 canvas 重繪輸出 JPG
+  let bitmap;
+  try{ bitmap = await createImageBitmap(file); }
+  catch(err){
+    // 少數無法直接解碼的 HEIC：先用 <img> + objectURL 退回
+    bitmap = await new Promise((res,rej)=>{
+      const img=new Image(); const url=URL.createObjectURL(file);
+      img.onload=()=>{URL.revokeObjectURL(url);res(img);};
+      img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('decode fail'));};
+      img.src=url;
+    });
+  }
+  let w=bitmap.width, h=bitmap.height;
+  if(Math.max(w,h)>MAX_DIM){
+    const s=MAX_DIM/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s);
+  }
+  const canvas=document.createElement('canvas');
+  canvas.width=w; canvas.height=h;
+  canvas.getContext('2d').drawImage(bitmap,0,0,w,h);
+  const blob=await new Promise(r=>canvas.toBlob(r,'image/jpeg',JPG_QUALITY));
+  const thumb=canvas.toDataURL('image/jpeg',0.5);
+  return {blob,thumb,w,h};
+}
+
+// 影片：取首幀當縮圖，原檔上傳（不在瀏覽器轉碼）
+async function processVideo(file){
+  const url=URL.createObjectURL(file);
+  const thumb=await new Promise((res)=>{
+    const v=document.createElement('video');
+    v.muted=true; v.playsInline=true; v.src=url;
+    v.onloadeddata=()=>{ v.currentTime=Math.min(0.1,v.duration||0.1); };
+    v.onseeked=()=>{
+      const c=document.createElement('canvas');
+      const ratio=Math.min(MAX_DIM/Math.max(v.videoWidth,v.videoHeight),1);
+      c.width=v.videoWidth*ratio; c.height=v.videoHeight*ratio;
+      c.getContext('2d').drawImage(v,0,0,c.width,c.height);
+      res(c.toDataURL('image/jpeg',0.5));
+    };
+    v.onerror=()=>res('');
+  });
+  URL.revokeObjectURL(url);
+  return {blob:file,thumb};
+}
+
+// ====== 渲染 ======
+const zonesEl=document.getElementById('zones');
+const emptyHint=document.getElementById('emptyHint');
+
+function render(){
+  zonesEl.innerHTML='';
+  state.zones.forEach((z,zi)=>{
+    const card=document.createElement('div');
+    card.className='zone';
+
+    const head=document.createElement('div');
+    head.className='zone-head';
+    head.innerHTML=`<div class="zone-num">${zi+1}</div>`;
+    const nameInput=document.createElement('input');
+    nameInput.className='zone-name'; nameInput.type='text';
+    nameInput.placeholder='區域名稱（例：CNC 加工區）';
+    nameInput.value=z.name||'';
+    nameInput.addEventListener('input',e=>{z.name=e.target.value;});
+    head.appendChild(nameInput);
+    const del=document.createElement('button');
+    del.className='zone-del'; del.textContent='🗑';
+    del.addEventListener('click',()=>{
+      if(confirm(`刪除區域「${z.name||'未命名'}」？`)){
+        state.zones.splice(zi,1); render(); persist();
+      }
+    });
+    head.appendChild(del);
+    card.appendChild(head);
+
+    const notes=document.createElement('textarea');
+    notes.className='zone-notes'; notes.placeholder='備註…';
+    notes.value=z.notes||'';
+    notes.addEventListener('input',e=>{z.notes=e.target.value;});
+    card.appendChild(notes);
+
+    const grid=document.createElement('div');
+    grid.className='media-grid';
+    z.files.forEach((f,fi)=>{
+      const cell=document.createElement('div');
+      cell.className='media-cell';
+      const media = f.kind==='video'
+        ? `<img src="${f.thumb}" alt=""><span class="vid-badge">▶ 影片</span>`
+        : `<img src="${f.thumb}" alt="">`;
+      cell.innerHTML=media+`<button class="cell-del" data-fi="${fi}">×</button>`;
+      cell.querySelector('.cell-del').addEventListener('click',()=>{
+        z.files.splice(fi,1); render(); persist();
+      });
+      grid.appendChild(cell);
+    });
+    if(z.files.length<MAX_FILES){
+      const add=document.createElement('label');
+      add.className='media-cell add-cell';
+      add.innerHTML=`<span class="plus">＋</span><span class="cnt">${z.files.length}/${MAX_FILES}</span>`;
+      const inp=document.createElement('input');
+      inp.type='file'; inp.accept='image/*,video/*'; inp.multiple=true;
+      inp.style.display='none';
+      inp.addEventListener('change',e=>handleFiles(z,e.target.files));
+      add.appendChild(inp);
+      grid.appendChild(add);
+    }
+    card.appendChild(grid);
+    zonesEl.appendChild(card);
+  });
+  emptyHint.style.display = state.zones.length? 'none':'block';
+}
+
+// ====== 檔案處理 ======
+async function handleFiles(zone, fileList){
+  const files=[...fileList];
+  const room=MAX_FILES-zone.files.length;
+  if(files.length>room){ showToast(`這個區域最多 ${MAX_FILES} 個，只加前 ${room} 個`); }
+  const todo=files.slice(0,room);
+  showStatus('處理中…');
+  for(const file of todo){
+    try{
+      if(file.type.startsWith('video')){
+        const {blob,thumb}=await processVideo(file);
+        zone.files.push({id:uid(),kind:'video',blob,thumb,name:file.name});
+      }else{
+        const {blob,thumb}=await processImage(file);
+        const base=file.name.replace(/\.[^.]+$/,'')||'photo';
+        zone.files.push({id:uid(),kind:'photo',blob,thumb,name:base+'.jpg'});
+      }
+      render(); 
+    }catch(err){ console.error(err); showToast('有一個檔案讀取失敗，已略過'); }
+  }
+  hideStatus();
+  persist();
+}
+
+// ====== 持久化 ======
+const vendorEl=document.getElementById('vendor');
+vendorEl.addEventListener('input',e=>{state.vendor=e.target.value; persistDebounced();});
+let pTimer;
+function persistDebounced(){clearTimeout(pTimer);pTimer=setTimeout(persist,500);}
+async function persist(){
+  try{ await dbSet('current', state); document.querySelector('.h-dot').style.background='var(--ok)'; }
+  catch(e){ console.error(e); }
+}
+
+// ====== UI 輔助 ======
+const pill=document.getElementById('statusPill'), pillText=document.getElementById('statusText');
+function showStatus(t){pillText.textContent=t;pill.classList.add('show');}
+function hideStatus(){pill.classList.remove('show');}
+const toastEl=document.getElementById('toast');let toastTimer;
+function showToast(msg){toastEl.textContent=msg;toastEl.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>toastEl.classList.remove('show'),2600);}
+
+// ====== 按鈕 ======
+document.getElementById('addZone').addEventListener('click',()=>{
+  state.zones.push({id:uid(),name:'',notes:'',files:[]});
+  render(); persist();
+  window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+});
+document.getElementById('saveBtn').addEventListener('click',async()=>{
+  await persist(); showToast('已儲存到本機');
+});
+
+// ====== Drive 上傳（接點，下一段接 Apps Script）======
+document.getElementById('uploadBtn').addEventListener('click',async()=>{
+  if(!state.vendor.trim()){ showToast('先填廠商名稱'); return; }
+  if(!state.zones.length){ showToast('還沒有任何區域'); return; }
+  if(!DRIVE_WEBHOOK){
+    showToast('Drive 連線將在下一步接上');
+    return;
+  }
+  await uploadToDrive();
+});
+
+async function blobToBase64(blob){
+  return new Promise((res)=>{
+    const r=new FileReader();
+    r.onloadend=()=>res(r.result.split(',')[1]);
+    r.readAsDataURL(blob);
+  });
+}
+
+async function uploadToDrive(){
+  showStatus('上傳中…');
+  try{
+    for(const z of state.zones){
+      for(const f of z.files){
+        const b64=await blobToBase64(f.blob);
+        const payload={
+          vendor:state.vendor.trim(),
+          zone:z.name.trim()||'未命名區域',
+          notes:z.notes||'',
+          filename:f.name,
+          mimeType:f.kind==='video'?(f.blob.type||'video/mp4'):'image/jpeg',
+          data:b64
+        };
+        const res=await fetch(DRIVE_WEBHOOK,{
+          method:'POST',
+          body:JSON.stringify(payload)
+        });
+        if(!res.ok) throw new Error('upload failed '+res.status);
+      }
+    }
+    hideStatus(); showToast('已上傳到 Drive ✓');
+  }catch(err){
+    console.error(err); hideStatus(); showToast('上傳失敗，請檢查連線');
+  }
+}
+
+// ====== 離線快取（Service Worker）======
+// 只在 HTTPS（如 GitHub Pages）生效；本機 file:// 不會註冊，屬正常。
+if('serviceWorker' in navigator && location.protocol==='https:'){
+  navigator.serviceWorker.register('sw.js').catch(e=>console.warn('SW register failed',e));
+}
+
+// ====== 連線狀態提示 ======
+function refreshNet(){
+  const dot=document.querySelector('.h-dot');
+  if(navigator.onLine){ dot.style.background='var(--ok)'; dot.title='本機已儲存・有網路'; }
+  else{ dot.style.background='var(--accent)'; dot.title='離線中・資料仍存在本機'; }
+}
+window.addEventListener('online',()=>{refreshNet();showToast('已恢復連線');});
+window.addEventListener('offline',()=>{refreshNet();showToast('已離線・資料仍會存在手機');});
+
+// ====== 啟動 ======
+(async function init(){
+  await openDB();
+  const saved=await dbGet('current');
+  if(saved){ state=saved; vendorEl.value=state.vendor||''; }
+  if(!state.zones.length){ state.zones.push({id:uid(),name:'',notes:'',files:[]}); }
+  render();
+  refreshNet();
+})();
+</script>
+</body>
+</html>
