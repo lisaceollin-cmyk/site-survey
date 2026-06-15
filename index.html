@@ -155,8 +155,8 @@
 <script>
 // ====== 設定 ======
 const MAX_FILES = 6;
-const MAX_DIM = 1600;          // 照片壓縮最長邊
-const JPG_QUALITY = 0.8;       // 壓縮品質
+const MAX_DIM = 1600;
+const JPG_QUALITY = 0.8;
 const DB_NAME = 'siteSurvey';
 const STORE = 'session';
 let DRIVE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbw9ZpUppi4q-3UxdCFK1qodfuzYSx8wOl6WAZttTmABCz620UJjpbHTAVUC5ay6xGQX/exec';
@@ -357,8 +357,33 @@ document.getElementById('uploadBtn').addEventListener('click',async()=>{
   if(!state.vendor.trim()){ showToast('先填廠商名稱'); return; }
   if(!state.zones.length){ showToast('還沒有任何區域'); return; }
   if(!DRIVE_WEBHOOK){ showToast('Drive 連線將在下一步接上'); return; }
+  // 上傳前：跨區域重複檔名檢查（只提醒,不自動刪）
+  const dups=findDuplicateNames();
+  if(dups.length){
+    const lines=dups.map(d=>`・${d.name}（${d.zones.join('、')}）`).join('\n');
+    const ok=confirm(`偵測到重複檔案:\n\n${lines}\n\n同一張照片出現在多個區域。仍要繼續上傳嗎？\n（各區會各自保留一份；要避免重複請先取消,刪掉多餘的再傳）`);
+    if(!ok) return;
+  }
   await uploadToDrive();
 });
+
+// 掃描所有區域,找出重複的照片檔名
+function findDuplicateNames(){
+  const map={};
+  state.zones.forEach(z=>{
+    const zoneName=z.name.trim()||'未命名區域';
+    z.files.forEach(f=>{
+      if(f.kind==='video') return;
+      if(!map[f.name]) map[f.name]=new Set();
+      map[f.name].add(zoneName);
+    });
+  });
+  const result=[];
+  for(const name in map){
+    if(map[name].size>1){ result.push({name, zones:[...map[name]]}); }
+  }
+  return result;
+}
 
 async function blobToBase64(blob){
   return new Promise((res)=>{
