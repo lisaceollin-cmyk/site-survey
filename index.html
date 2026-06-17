@@ -30,7 +30,6 @@
   textarea{resize:vertical;min-height:64px;}
   ::placeholder{color:var(--text-faint);}
 
-  /* 頂部 */
   header{position:sticky;top:0;z-index:20;background:rgba(21,23,28,.92);
     backdrop-filter:blur(12px);border-bottom:1px solid var(--line-soft);
     padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;}
@@ -45,7 +44,6 @@
     margin:0 0 8px 2px;letter-spacing:.3px;}
   .vendor-block{margin-bottom:22px;}
 
-  /* 區域卡 */
   .zone{background:var(--surface);border:1px solid var(--line-soft);
     border-radius:18px;padding:16px;margin-bottom:16px;}
   .zone-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
@@ -60,17 +58,21 @@
 
   .zone-notes{margin-top:10px;}
 
-  /* 媒體網格 */
   .media-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
   .media-cell{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;
     background:var(--surface-2);border:1px solid var(--line-soft);}
   .media-cell img,.media-cell video{width:100%;height:100%;object-fit:cover;display:block;}
-  .media-cell .vid-badge{position:absolute;left:6px;top:6px;background:rgba(0,0,0,.65);
-    color:#fff;font-size:11px;padding:2px 6px;border-radius:6px;display:flex;align-items:center;gap:3px;}
   .media-cell .cell-share{position:absolute;left:6px;right:6px;bottom:6px;
     background:var(--accent);color:#1a1305;border:none;border-radius:8px;
     padding:6px 4px;font-size:12px;font-weight:700;cursor:pointer;}
   .media-cell .cell-share:active{background:var(--accent-press);}
+  .vid-placeholder{width:100%;height:100%;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:6px;padding:8px;
+    background:linear-gradient(135deg,#2d3340,#1c2027);}
+  .vid-placeholder .vid-ico{font-size:30px;line-height:1;}
+  .vid-placeholder .vid-name{font-size:11px;color:var(--text-dim);
+    text-align:center;word-break:break-all;line-height:1.2;
+    max-height:2.4em;overflow:hidden;}
   .media-cell .cell-del{position:absolute;top:5px;right:5px;width:24px;height:24px;
     border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:none;font-size:14px;
     cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;}
@@ -81,7 +83,6 @@
   .add-cell .plus{font-size:26px;font-weight:300;line-height:1;}
   .add-cell .cnt{font-size:11px;color:var(--text-faint);}
 
-  /* 按鈕 */
   .btn{display:flex;align-items:center;justify-content:center;gap:8px;
     width:100%;padding:16px;border-radius:14px;border:none;font-weight:700;
     font-size:17px;cursor:pointer;letter-spacing:.5px;}
@@ -89,7 +90,6 @@
     border:1.5px dashed var(--line);margin-top:4px;}
   .btn-add-zone:active{background:var(--surface-2);}
 
-  /* 底部固定列 */
   .footbar{position:fixed;left:0;right:0;bottom:0;z-index:30;
     padding:12px 16px calc(env(safe-area-inset-bottom) + 12px);
     background:linear-gradient(to top,var(--bg) 60%,transparent);
@@ -98,7 +98,6 @@
   .btn-upload{flex:1.4;background:var(--accent);color:#1a1305;}
   .btn-upload:active{background:var(--accent-press);}
 
-  /* 狀態膠囊 */
   .status-pill{position:fixed;left:50%;transform:translateX(-50%);
     bottom:calc(env(safe-area-inset-bottom) + 86px);z-index:40;
     background:var(--surface);border:1px solid var(--line);border-radius:999px;
@@ -109,7 +108,6 @@
     border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
 
-  /* Toast */
   .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(20px);
     bottom:calc(env(safe-area-inset-bottom) + 150px);z-index:50;opacity:0;
     background:#000;color:#fff;padding:12px 18px;border-radius:12px;font-size:15px;
@@ -153,7 +151,6 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ====== 設定 ======
 const MAX_FILES = 6;
 const MAX_DIM = 1600;
 const JPG_QUALITY = 0.8;
@@ -161,7 +158,6 @@ const DB_NAME = 'siteSurvey';
 const STORE = 'session';
 let DRIVE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbw9ZpUppi4q-3UxdCFK1qodfuzYSx8wOl6WAZttTmABCz620UJjpbHTAVUC5ay6xGQX/exec';
 
-// ====== IndexedDB ======
 let db;
 function openDB(){
   return new Promise((res,rej)=>{
@@ -182,12 +178,10 @@ function dbGet(key){return new Promise((res,rej)=>{
   rq.onsuccess=()=>res(rq.result); rq.onerror=rej;
 });}
 
-// ====== 狀態 ======
 let state = { vendor:'', zones:[] };
 
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 
-// ====== 照片壓縮 / HEIC 轉檔 ======
 async function processImage(file){
   let bitmap;
   try{ bitmap = await createImageBitmap(file); }
@@ -211,27 +205,11 @@ async function processImage(file){
   return {blob,thumb,w,h};
 }
 
-// 影片：取首幀當縮圖,原檔保留(改走分享,不經 webhook)
 async function processVideo(file){
-  const url=URL.createObjectURL(file);
-  const thumb=await new Promise((res)=>{
-    const v=document.createElement('video');
-    v.muted=true; v.playsInline=true; v.src=url;
-    v.onloadeddata=()=>{ v.currentTime=Math.min(0.1,v.duration||0.1); };
-    v.onseeked=()=>{
-      const c=document.createElement('canvas');
-      const ratio=Math.min(MAX_DIM/Math.max(v.videoWidth,v.videoHeight),1);
-      c.width=v.videoWidth*ratio; c.height=v.videoHeight*ratio;
-      c.getContext('2d').drawImage(v,0,0,c.width,c.height);
-      res(c.toDataURL('image/jpeg',0.5));
-    };
-    v.onerror=()=>res('');
-  });
-  URL.revokeObjectURL(url);
-  return {blob:file,thumb};
+  // 不抽幀（抽幀在部分影片/iOS 會卡住，導致影片加不進格子）。
+  return {blob:file, thumb:''};
 }
 
-// ====== 渲染 ======
 const zonesEl=document.getElementById('zones');
 const emptyHint=document.getElementById('emptyHint');
 
@@ -272,7 +250,7 @@ function render(){
       const cell=document.createElement('div');
       cell.className='media-cell';
       const media = f.kind==='video'
-        ? `<img src="${f.thumb}" alt=""><span class="vid-badge">▶ 影片</span><button class="cell-share">分享至 Drive</button>`
+        ? `<div class="vid-placeholder"><span class="vid-ico">🎬</span><span class="vid-name">${f.name||'影片'}</span></div><button class="cell-share">分享至 Drive</button>`
         : `<img src="${f.thumb}" alt="">`;
       cell.innerHTML=media+`<button class="cell-del" data-fi="${fi}">×</button>`;
       cell.querySelector('.cell-del').addEventListener('click',()=>{
@@ -300,7 +278,6 @@ function render(){
   emptyHint.style.display = state.zones.length? 'none':'block';
 }
 
-// ====== 檔案處理 ======
 async function handleFiles(zone, fileList){
   const files=[...fileList];
   const room=MAX_FILES-zone.files.length;
@@ -324,7 +301,6 @@ async function handleFiles(zone, fileList){
   persist();
 }
 
-// ====== 持久化 ======
 const vendorEl=document.getElementById('vendor');
 vendorEl.addEventListener('input',e=>{state.vendor=e.target.value; persistDebounced();});
 let pTimer;
@@ -334,7 +310,6 @@ async function persist(){
   catch(e){ console.error(e); }
 }
 
-// ====== UI 輔助 ======
 const pill=document.getElementById('statusPill'), pillText=document.getElementById('statusText');
 function showStatus(t){pillText.textContent=t;pill.classList.add('show');}
 function hideStatus(){pill.classList.remove('show');}
@@ -342,7 +317,6 @@ const toastEl=document.getElementById('toast');let toastTimer;
 function showToast(msg){toastEl.textContent=msg;toastEl.classList.add('show');
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>toastEl.classList.remove('show'),2600);}
 
-// ====== 按鈕 ======
 document.getElementById('addZone').addEventListener('click',()=>{
   state.zones.push({id:uid(),name:'',notes:'',files:[]});
   render(); persist();
@@ -352,12 +326,10 @@ document.getElementById('saveBtn').addEventListener('click',async()=>{
   await persist(); showToast('已儲存到本機');
 });
 
-// ====== Drive 上傳 ======
 document.getElementById('uploadBtn').addEventListener('click',async()=>{
   if(!state.vendor.trim()){ showToast('先填廠商名稱'); return; }
   if(!state.zones.length){ showToast('還沒有任何區域'); return; }
   if(!DRIVE_WEBHOOK){ showToast('Drive 連線將在下一步接上'); return; }
-  // 上傳前：跨區域重複檔名檢查（只提醒,不自動刪）
   const dups=findDuplicateNames();
   if(dups.length){
     const lines=dups.map(d=>`・${d.name}（${d.zones.join('、')}）`).join('\n');
@@ -367,7 +339,6 @@ document.getElementById('uploadBtn').addEventListener('click',async()=>{
   await uploadToDrive();
 });
 
-// 掃描所有區域,找出重複的照片檔名
 function findDuplicateNames(){
   const map={};
   state.zones.forEach(z=>{
@@ -429,7 +400,6 @@ async function uploadToDrive(){
   }
 }
 
-// 影片：叫出系統分享選單,可選 Google Drive App
 async function shareVideo(f){
   try{
     const file=new File([f.blob], f.name||'video.mp4', {type:f.blob.type||'video/mp4'});
@@ -443,12 +413,10 @@ async function shareVideo(f){
   }
 }
 
-// ====== 離線快取 ======
 if('serviceWorker' in navigator && location.protocol==='https:'){
   navigator.serviceWorker.register('sw.js').catch(e=>console.warn('SW register failed',e));
 }
 
-// ====== 連線狀態提示 ======
 function refreshNet(){
   const dot=document.querySelector('.h-dot');
   if(navigator.onLine){ dot.style.background='var(--ok)'; dot.title='本機已儲存・有網路'; }
@@ -457,7 +425,6 @@ function refreshNet(){
 window.addEventListener('online',()=>{refreshNet();showToast('已恢復連線');});
 window.addEventListener('offline',()=>{refreshNet();showToast('已離線・資料仍會存在手機');});
 
-// ====== 啟動 ======
 (async function init(){
   await openDB();
   const saved=await dbGet('current');
